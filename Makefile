@@ -117,6 +117,9 @@ $(BUILD)/$(TARGET).bin: $(BUILD)/$(TARGET).elf
 $(BUILD)/$(TARGET).dfu: $(BUILD)/$(TARGET).bin
 	$(Q)./dfu.py -b $(FLASH_ADDR):$^ $@
 
+lib:
+	make -C $(LIBOPENCM3_DIR) TARGETS=stm32/f4
+
 $(LIBOPENCM3_LIBNAME_FULL):
 	git submodule update --init
 	make -C $(LIBOPENCM3_DIR) TARGETS=stm32/f4

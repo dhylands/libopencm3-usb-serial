@@ -362,42 +362,6 @@ void usb_vcp_printf(const char *fmt, ...) {
 	va_end(args);
 }
 
-static void fill_usb_serial(void) {
-    // This document: http://www.usb.org/developers/docs/devclass_docs/usbmassbulk_10.pdf
-    // says that the serial number has to be at least 12 digits long and that
-    // the last 12 digits need to be unique. It also stipulates that the valid
-    // character set is that of upper-case hexadecimal digits.
-    //
-    // The onboard DFU bootloader produces a 12-digit serial number based on
-    // the 96-bit unique ID, so for consistency we go with this algorithm.
-    // You can see the serial number if you do:
-    //
-    //     dfu-util -l
-    //
-    // See: https://my.st.com/52d187b7 for the algorithim used.
-
-	uint8_t *id = (uint8_t *)DESIG_UNIQUE_ID_BASE;
-
-	uint8_t serial[6];
-	serial[0] = id[11];
-	serial[1] = id[10] + id[2];
-	serial[2] = id[9];
-	serial[3] = id[8] + id[0];
-	serial[4] = id[7];
-	serial[5] = id[6];
-
-	uint8_t *ser = &serial[0];
-	uint8_t *end = &serial[6];
-	char *ser_str = usb_serial;
-	const char hex_digit[] = "0123456789ABCDEF";
-
-	for (; ser < end; ser++) {
-		*ser_str++ = hex_digit[(*ser >> 4) & 0x0f];
-		*ser_str++ = hex_digit[(*ser >> 0) & 0x0f];
-	}
-	*ser_str = '\0';
-}
-
 void usb_vcp_init(void) {
 	rcc_periph_clock_enable(RCC_GPIOA);
 	rcc_periph_clock_enable(RCC_OTGFS);
@@ -411,7 +375,7 @@ void usb_vcp_init(void) {
 			GPIO9 | GPIO11 | GPIO12);
 	gpio_set_af(GPIOA, GPIO_AF10, GPIO9 | GPIO11 | GPIO12);
 
-	fill_usb_serial();
+	desig_get_dfu_serial(usb_serial);
 
 	g_usbd_dev = usbd_init(&otgfs_usb_driver, &dev, &config,
 			usb_strings, NUM_USB_STRINGS,

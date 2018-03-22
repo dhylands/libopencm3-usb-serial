@@ -80,37 +80,37 @@
 
 #define CBUF_Len(cbuf)              ((typeof(cbuf.m_put_idx))((cbuf.m_put_idx) - (cbuf.m_get_idx)))
 
-/** 
+/**
 *   Returns the size of the buffer (in entries)
 */
 #define CBUF_Size(cbuf)             (sizeof(cbuf.m_entry) / sizeof(cbuf.m_entry[0]))
 
 /**
-*   Returns the number of unused entries which are currently in 
-*   the buffer. 
+*   Returns the number of unused entries which are currently in
+*   the buffer.
 */
 #define CBUF_Space(cbuf)            (CBUF_Size(cbuf) - CBUF_Len(cbuf))
 
 /**
-*   Determines the mask used to extract the real get & put 
-*   pointers. 
+*   Determines the mask used to extract the real get & put
+*   pointers.
 */
 #define CBUF_Mask(cbuf)             (CBUF_Size(cbuf) - 1)
 
-/** 
+/**
 *   Determines if the get and put pointers are "wrapped".
-*/  
+*/
 #define CBUF_Wrapped(cbuf)          (((cbuf.m_put_idx ^ cbuf.m_get_idx) & ~CBUF_Mask(cbuf)) != 0)
 
-/** 
+/**
 *   Returns the number of contiguous entries which can be
 *   retrieved from the buffer.
 */
 #define CBUF_ContigLen(cbuf)        (CBUF_Wrapped(cbuf) ? (CBUF_Size(cbuf) - (cbuf.m_get_idx & CBUF_Mask(cbuf))) : CBUF_Len(cbuf))
 
-/** 
-*   Returns the number of contiguous entries which can be placed 
-*   into the buffer. 
+/**
+*   Returns the number of contiguous entries which can be placed
+*   into the buffer.
 */
 #define CBUF_ContigSpace(cbuf)      (CBUF_Wrapped(cbuf) ? CBUF_Space(cbuf) : (CBUF_Size(cbuf) - (cbuf.m_put_idx & CBUF_Mask(cbuf))))
 
@@ -120,13 +120,19 @@
 *   member.
 */
 
-#define CBUF_Push(cbuf, elem)       (cbuf.m_entry)[ cbuf.m_put_idx++ & CBUF_Mask(cbuf)] = (elem)
+#define CBUF_Push(cbuf, elem) do { \
+    (cbuf.m_entry)[cbuf.m_put_idx & CBUF_Mask(cbuf)] = (elem); \
+    cbuf.m_put_idx++; \
+} while (0)
 
 /**
 *   Retrieves an element from the beginning of the circular buffer
 */
 
-#define CBUF_Pop(cbuf)              (cbuf.m_entry)[ cbuf.m_get_idx++ & CBUF_Mask(cbuf)]
+#define CBUF_Pop(cbuf) ({ \
+    __typeof__(cbuf.m_entry[0]) _elem = (cbuf.m_entry)[cbuf.m_get_idx & CBUF_Mask(cbuf)]; \
+    cbuf.m_get_idx++; \
+    _elem; })
 
 /**
 *   Returns a pointer to the last spot that was pushed.
